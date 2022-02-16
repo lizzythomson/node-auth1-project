@@ -9,10 +9,10 @@ const usersModel = require('../users/users-model');
 */
 
 function restricted(req, res, next) {
-  if (req.session.user) {
-    next();
+  if (!req.session.user) {
+    res.status(401).json({ message: 'You shall not pass!' });
   } else {
-    next({ status: 401, message: 'You shall not pass!' });
+    next();
   }
 }
 
@@ -26,14 +26,11 @@ function restricted(req, res, next) {
 */
 async function checkUsernameFree(req, res, next) {
   const username = req.body.username.trim();
-  const allUsers = await usersModel.find();
-  const duplicateUsername = allUsers.find((user) => {
-    return user.username === username;
-  });
-  if (duplicateUsername !== undefined) {
+  const [duplicateUser] = await usersModel.findBy({ username });
+  if (duplicateUser !== undefined) {
     res.status(422).json({ message: 'Username taken' });
   } else {
-    req.body.username = req.body.username.trim();
+    req.body.username = username;
     next();
   }
 }
@@ -48,16 +45,14 @@ async function checkUsernameFree(req, res, next) {
 */
 async function checkUsernameExists(req, res, next) {
   const username = req.body.username.trim();
-  const allUsers = await usersModel.find();
-  const validateUsername = allUsers.find((user) => {
-    return user.username === username;
-  });
-  if (validateUsername === undefined) {
-    res.status(422).json({ message: 'Invalid credentials' });
+  const [user] = await usersModel.findBy({ username });
+  if (user === undefined) {
+    res.status(401).json({ message: 'Invalid credentials' });
   } else {
     next();
   }
 }
+
 /*
   If password is missing from req.body, or if it's 3 chars or shorter
 
@@ -67,7 +62,6 @@ async function checkUsernameExists(req, res, next) {
   }
 */
 function checkPasswordLength(req, res, next) {
-  // TODO: How to check length??
   if (!req.body.password || req.body.password.length < 4) {
     res.status(422).json({ message: 'Password must be longer than 3 chars' });
   } else {
@@ -76,7 +70,6 @@ function checkPasswordLength(req, res, next) {
 }
 
 // Don't forget to add these to the `exports` object so they can be required in other modules
-
 module.exports = {
   restricted,
   checkUsernameFree,
