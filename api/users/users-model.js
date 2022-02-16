@@ -11,7 +11,7 @@ function find() {
   resolves to an ARRAY with all users that match the filter condition
  */
 function findBy(filter) {
-  return db.select('user_id', 'username').from('users').where(filter);
+  return db('users').where(filter);
 }
 
 /**
